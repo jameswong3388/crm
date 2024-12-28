@@ -1,12 +1,14 @@
 <template>
   <button
     class="flex h-7 cursor-pointer items-center rounded text-ink-gray-7 duration-300 ease-in-out focus:outline-none focus:transition-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-outline-gray-3"
-    :class="isActive ? 'bg-surface-selected shadow-sm' : 'hover:bg-surface-gray-2'"
+    :class="isActive ? 'bg-blue-700 shadow-sm' : 'hover:bg-surface-gray-2'"
     @click="handleClick"
   >
     <div
       class="flex w-full items-center justify-between duration-300 ease-in-out"
-      :class="isCollapsed ? 'ml-[3px] p-1' : 'px-2 py-1'"
+      :class="[
+        isCollapsed ? 'ml-[3px] p-1' : 'px-2 py-1',
+      ]"
     >
       <div class="flex items-center truncate">
         <Tooltip :text="label" placement="right" :disabled="!isCollapsed">
@@ -15,9 +17,15 @@
               <FeatherIcon
                 v-if="typeof icon == 'string'"
                 :name="icon"
-                class="size-4 text-ink-gray-7"
+                class="size-4"
+                :class="isActive ? 'text-blue-200' : 'text-ink-gray-7'"
               />
-              <component v-else :is="icon" class="size-4 text-ink-gray-7" />
+              <component
+                v-else
+                :is="icon"
+                class="size-4"
+                :class="isActive ? 'text-blue-200' : 'text-ink-gray-7'"
+              />
             </span>
           </slot>
         </Tooltip>
@@ -29,11 +37,12 @@
         >
           <span
             class="flex-1 flex-shrink-0 truncate text-sm duration-300 ease-in-out"
-            :class="
+            :class="[
               isCollapsed
                 ? 'ml-0 w-0 overflow-hidden opacity-0'
-                : 'ml-2 w-auto opacity-100'
-            "
+                : 'ml-2 w-auto opacity-100',
+              isActive ? 'text-blue-200 font-semibold' : ''
+            ]"
           >
             {{ label }}
           </span>
@@ -45,10 +54,10 @@
 </template>
 
 <script setup>
-import { Tooltip } from 'frappe-ui'
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { isMobileView, mobileSidebarOpened } from '@/composables/settings'
+import {Tooltip} from 'frappe-ui'
+import {computed} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {isMobileView, mobileSidebarOpened} from '@/composables/settings'
 
 const router = useRouter()
 const route = useRoute()
