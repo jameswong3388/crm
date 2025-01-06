@@ -9,14 +9,15 @@
         </template>
       </Breadcrumbs>
       <div class="absolute right-0">
-        <Dropdown :options="statusOptions('lead', updateField, customStatuses)">
+        <Dropdown
+          :options="
+            statusOptions('lead', updateField, lead.data._customStatuses)
+          "
+        >
           <template #default="{ open }">
-            <Button
-              :label="lead.data.status"
-              :class="getLeadStatus(lead.data.status).colorClass"
-            >
+            <Button :label="lead.data.status">
               <template #prefix>
-                <IndicatorIcon />
+                <IndicatorIcon :class="getLeadStatus(lead.data.status).color" />
               </template>
               <template #suffix>
                 <FeatherIcon
@@ -34,14 +35,16 @@
     v-if="lead.data"
     class="flex h-12 items-center justify-between gap-2 border-b px-3 py-2.5"
   >
-    <component :is="lead.data._assignedTo?.length == 1 ? 'Button' : 'div'">
-      <MultipleAvatar
-        :avatars="lead.data._assignedTo"
-        @click="showAssignmentModal = true"
-      />
-    </component>
+    <AssignTo
+      v-model="lead.data._assignedTo"
+      :data="lead.data"
+      doctype="CRM Lead"
+    />
     <div class="flex items-center gap-2">
-      <CustomActions v-if="customActions" :actions="customActions" />
+      <CustomActions
+        v-if="lead.data._customActions?.length"
+        :actions="lead.data._customActions"
+      />
       <Button
         :label="__('Convert')"
         variant="solid"
@@ -64,26 +67,16 @@
           @updateField="updateField"
         />
         <div
-          v-if="fieldsLayout.data"
+          v-if="sections.data"
           class="flex flex-1 flex-col justify-between overflow-hidden"
         >
-          <div class="flex flex-col overflow-y-auto">
-            <div
-              v-for="(section, i) in fieldsLayout.data"
-              :key="section.name"
-              class="flex flex-col px-2 py-3 sm:p-3"
-              :class="{ 'border-b': i !== fieldsLayout.data.length - 1 }"
-            >
-              <Section :label="section.label" :opened="section.opened">
-                <SidePanelLayout
-                  :fields="section.columns[0].fields"
-                  :isLastSection="i == fieldsLayout.data.length - 1"
-                  v-model="lead.data"
-                  @update="updateField"
-                />
-              </Section>
-            </div>
-          </div>
+          <SidePanelLayout
+            v-model="lead.data"
+            :sections="sections.data"
+            doctype="CRM Lead"
+            @update="updateField"
+            @reload="sections.reload"
+          />
         </div>
       </div>
       <Activities
@@ -96,13 +89,6 @@
       />
     </Tabs>
   </div>
-  <AssignmentModal
-    v-if="showAssignmentModal"
-    v-model="showAssignmentModal"
-    v-model:assignees="lead.data._assignedTo"
-    :doc="lead.data"
-    doctype="CRM Lead"
-  />
   <Dialog
     v-model="showConvertToDealModal"
     :options="{
@@ -186,10 +172,8 @@ import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
-import AssignmentModal from '@/components/Modals/AssignmentModal.vue'
-import MultipleAvatar from '@/components/MultipleAvatar.vue'
+import AssignTo from '@/components/AssignTo.vue'
 import Link from '@/components/Controls/Link.vue'
-import Section from '@/components/Section.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
 import CustomActions from '@/components/CustomActions.vue'
@@ -231,15 +215,13 @@ const props = defineProps({
   },
 })
 
-const customActions = ref([])
-const customStatuses = ref([])
-
 const lead = createResource({
   url: 'crm.fcrm.doctype.crm_lead.api.get_lead',
   params: { name: props.leadId },
   cache: ['lead', props.leadId],
-  onSuccess: async (data) => {
-    let obj = {
+  onSuccess: (data) => {
+    setupAssignees(lead)
+    setupCustomizations(lead, {
       doc: data,
       $dialog,
       $socket,
@@ -249,14 +231,10 @@ const lead = createResource({
       deleteDoc: deleteLead,
       resource: {
         lead,
-        fieldsLayout,
+        sections,
       },
       call,
-    }
-    setupAssignees(data)
-    let customization = await setupCustomizations(data, obj)
-    customActions.value = customization.actions || []
-    customStatuses.value = customization.statuses || []
+    })
   },
 })
 
@@ -266,7 +244,6 @@ onMounted(() => {
 })
 
 const reload = ref(false)
-const showAssignmentModal = ref(false)
 
 function updateLead(fieldname, value, callback) {
   value = Array.isArray(fieldname) ? '' : value
@@ -420,7 +397,7 @@ watch(tabs, (value) => {
   }
 })
 
-const fieldsLayout = createResource({
+const sections = createResource({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
   cache: ['sidePanelSections', 'CRM Lead'],
   params: { doctype: 'CRM Lead' },

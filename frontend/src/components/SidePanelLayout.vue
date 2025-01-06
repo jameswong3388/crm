@@ -66,7 +66,7 @@
                       <div
                         class="w-[35%] min-w-20 shrink-0 truncate text-sm text-ink-gray-5"
                       >
-                        <span>{{ __(field.label) }}</span>
+                        {{ __(field.label) }}
                         <span
                           v-if="
                             field.reqd ||
@@ -412,6 +412,9 @@ const props = defineProps({
   preview: {
     type: Boolean,
     default: false,
+  },
+  addContact: {
+    type: Function,
   },
 })
 

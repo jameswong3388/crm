@@ -8,21 +8,22 @@
       </Breadcrumbs>
     </template>
     <template #right-header>
-      <CustomActions v-if="customActions" :actions="customActions" />
-      <component :is="deal.data._assignedTo?.length == 1 ? 'Button' : 'div'">
-        <MultipleAvatar
-          :avatars="deal.data._assignedTo"
-          @click="showAssignmentModal = true"
-        />
-      </component>
-      <Dropdown :options="statusOptions('deal', updateField, customStatuses)">
+      <CustomActions
+        v-if="deal.data._customActions?.length"
+        :actions="deal.data._customActions"
+      />
+      <AssignTo
+        v-model="deal.data._assignedTo"
+        :data="deal.data"
+        doctype="CRM Deal"
+      />
+      <Dropdown
+        :options="statusOptions('deal', updateField, deal.data._customStatuses)"
+      >
         <template #default="{ open }">
-          <Button
-            :label="deal.data.status"
-            :class="getDealStatus(deal.data.status).colorClass"
-          >
+          <Button :label="deal.data.status">
             <template #prefix>
-              <IndicatorIcon />
+              <IndicatorIcon :class="getDealStatus(deal.data.status).color" />
             </template>
             <template #suffix>
               <FeatherIcon
@@ -120,6 +121,7 @@
         <SidePanelLayout
           v-model="deal.data"
           :sections="sections.data"
+          :addContact="addContact"
           doctype="CRM Deal"
           v-slot="{ section }"
           @update="updateField"
@@ -237,13 +239,6 @@
       afterInsert: (doc) => addContact(doc.name),
     }"
   />
-  <AssignmentModal
-    v-if="showAssignmentModal"
-    v-model="showAssignmentModal"
-    v-model:assignees="deal.data._assignedTo"
-    :doc="deal.data"
-    doctype="CRM Deal"
-  />
   <FilesUploader
     v-if="deal.data?.name"
     v-model="showFilesUploader"
@@ -278,9 +273,8 @@ import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
-import AssignmentModal from '@/components/Modals/AssignmentModal.vue'
+import AssignTo from '@/components/AssignTo.vue'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
-import MultipleAvatar from '@/components/MultipleAvatar.vue'
 import ContactModal from '@/components/Modals/ContactModal.vue'
 import Section from '@/components/Section.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
@@ -326,14 +320,11 @@ const props = defineProps({
   },
 })
 
-const customActions = ref([])
-const customStatuses = ref([])
-
 const deal = createResource({
   url: 'crm.fcrm.doctype.crm_deal.api.get_deal',
   params: { name: props.dealId },
   cache: ['deal', props.dealId],
-  onSuccess: async (data) => {
+  onSuccess: (data) => {
     if (data.organization) {
       organization.update({
         params: { doctype: 'CRM Organization', name: data.organization },
@@ -341,7 +332,8 @@ const deal = createResource({
       organization.fetch()
     }
 
-    let obj = {
+    setupAssignees(deal)
+    setupCustomizations(deal, {
       doc: data,
       $dialog,
       $socket,
@@ -355,11 +347,7 @@ const deal = createResource({
         sections,
       },
       call,
-    }
-    setupAssignees(data)
-    let customization = await setupCustomizations(data, obj)
-    customActions.value = customization.actions || []
-    customStatuses.value = customization.statuses || []
+    })
   },
 })
 
@@ -390,7 +378,6 @@ onBeforeUnmount(() => {
 
 const reload = ref(false)
 const showOrganizationModal = ref(false)
-const showAssignmentModal = ref(false)
 const showFilesUploader = ref(false)
 const _organization = ref({})
 
