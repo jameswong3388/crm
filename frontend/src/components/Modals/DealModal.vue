@@ -10,7 +10,7 @@
           </div>
           <div class="flex items-center gap-1">
             <Button
-              v-if="isManager()"
+              v-if="isManager() && !isMobileView"
               variant="ghost"
               class="w-7"
               @click="openQuickEntryModal"
@@ -72,9 +72,10 @@
 
 <script setup>
 import EditIcon from '@/components/Icons/EditIcon.vue'
-import FieldLayout from '@/components/FieldLayout.vue'
+import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import { usersStore } from '@/stores/users'
 import { statusesStore } from '@/stores/statuses'
+import { isMobileView } from '@/composables/settings'
 import { capture } from '@/telemetry'
 import { Switch, createResource } from 'frappe-ui'
 import { computed, ref, reactive, onMounted, nextTick, watch } from 'vue'
@@ -110,8 +111,8 @@ const deal = reactive({
   deal_owner: '',
 })
 
-const hasOrganizationSections = ref(false)
-const hasContactSections = ref(false)
+const hasOrganizationSections = ref(true)
+const hasContactSections = ref(true)
 
 const isDealCreating = ref(false)
 const chooseExistingContact = ref(false)
@@ -143,6 +144,7 @@ const tabs = createResource({
   params: { doctype: 'CRM Deal', type: 'Quick Entry' },
   auto: true,
   transform: (_tabs) => {
+    hasOrganizationSections.value = false
     return _tabs.forEach((tab) => {
       tab.sections.forEach((section) => {
         section.columns.forEach((column) => {

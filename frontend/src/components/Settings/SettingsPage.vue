@@ -36,7 +36,7 @@
   </div>
 </template>
 <script setup>
-import FieldLayout from '@/components/FieldLayout.vue'
+import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import {
   createDocumentResource,
   createResource,
@@ -79,7 +79,6 @@ const data = createDocumentResource({
   auto: true,
   setValue: {
     onSuccess: () => {
-      error.value = null
       createToast({
         title: __('Success'),
         text: __(props.successMessage),
@@ -132,6 +131,7 @@ const tabs = computed(() => {
       _sections.push({
         label: field.label,
         name: field.fieldname,
+        hideBorder: field.hide_border,
         columns: [{ name: 'column_' + getRandom(), fields: [] }],
       })
     } else if (field.fieldtype === 'Column Break') {
