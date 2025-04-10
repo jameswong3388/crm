@@ -1,7 +1,7 @@
 <template>
   <button
     class="flex h-7 cursor-pointer items-center rounded text-ink-gray-7 duration-300 ease-in-out focus:outline-none focus:transition-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-outline-gray-3"
-    :class="isActive ? 'bg-surface-selected shadow-sm' : 'hover:bg-surface-gray-2'"
+    :class="isActive ? 'bg-blue-700 shadow-sm' : 'hover:bg-surface-gray-2'"
     @click="handleClick"
   >
     <div
@@ -15,9 +15,15 @@
               <FeatherIcon
                 v-if="typeof icon == 'string'"
                 :name="icon"
-                class="size-4 text-ink-gray-7"
+                class="size-4"
+                :class="isActive ? 'text-blue-200' : 'text-ink-gray-7'"
               />
-              <component v-else :is="icon" class="size-4 text-ink-gray-7" />
+              <component
+                v-else
+                :is="icon"
+                class="size-4"
+                :class="isActive ? 'text-blue-200' : 'text-ink-gray-7'"
+              />
             </span>
           </slot>
         </Tooltip>
@@ -29,11 +35,12 @@
         >
           <span
             class="flex-1 flex-shrink-0 truncate text-sm duration-300 ease-in-out"
-            :class="
+            :class="[
               isCollapsed
                 ? 'ml-0 w-0 overflow-hidden opacity-0'
-                : 'ml-2 w-auto opacity-100'
-            "
+                : 'ml-2 w-auto opacity-100',
+              isActive ? 'text-blue-200 font-semibold' : ''
+            ]"
           >
             {{ label }}
           </span>
